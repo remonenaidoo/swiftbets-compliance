@@ -4,4 +4,6 @@ namespace SwiftBets.Compliance.Api.Endpoints;
 public static class CompliancePermissions
 {
     public const string Read = "compliance.read";
+
+    public const string AuditRead = "compliance.audit.read";
 }
