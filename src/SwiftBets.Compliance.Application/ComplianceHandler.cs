@@ -57,6 +57,19 @@ public sealed class ComplianceHandler(IComplianceStore store, TimeProvider time)
         }, cancellationToken);
     }
 
+    /// <summary>Announces exclusions that have run out, so identity reopens the account; returns how many accounts.</summary>
+    public async Task<int> AnnounceEndedExclusionsAsync(CancellationToken cancellationToken)
+    {
+        var now = time.GetUtcNow();
+        var users = await store.EndedExclusionsAsync(now, 100, cancellationToken);
+        foreach (var userId in users)
+        {
+            await store.ChangeAsync(userId, "compliance", now, state => Result.Success(new ComplianceChange(state, "exclusion.ended", [new ExclusionsEnded()])), cancellationToken);
+        }
+
+        return users.Count;
+    }
+
     public Task<Result<ComplianceState>> SetSessionSettingsAsync(
         Guid userId, int? sessionLimitMinutes, int? realityCheckMinutes, string actor, CancellationToken cancellationToken)
     {

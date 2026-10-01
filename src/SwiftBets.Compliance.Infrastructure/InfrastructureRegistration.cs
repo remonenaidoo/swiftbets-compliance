@@ -9,6 +9,7 @@ using SwiftBets.Compliance.Infrastructure.Audit;
 using SwiftBets.Contracts.Audit;
 using SwiftBets.Contracts.Messaging;
 using SwiftBets.Compliance.Infrastructure.Persistence;
+using SwiftBets.Compliance.Infrastructure.Workers;
 
 namespace SwiftBets.Compliance.Infrastructure;
 
@@ -29,6 +30,11 @@ public static class InfrastructureRegistration
             services.AddKafkaConsumer<AuditRecordedV1, AuditRecordedConsumer>(Topics.AuditRecorded, "compliance.audit");
         }
         services.AddSingleton(TimeProvider.System);
+        if (configuration.GetValue("Exclusions:AnnounceEndings", true))
+        {
+            services.AddHostedService<ExclusionEndingWorker>();
+        }
+
         return services;
     }
 

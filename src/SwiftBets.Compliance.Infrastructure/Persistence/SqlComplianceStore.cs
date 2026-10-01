@@ -52,10 +52,17 @@ public sealed class SqlComplianceStore(ISqlConnectionFactory connections, IOutbo
         return Result.Success(next);
     }
 
+    public async Task<IReadOnlyList<Guid>> EndedExclusionsAsync(DateTimeOffset now, int batch, CancellationToken cancellationToken)
+    {
+        await using var connection = await connections.OpenAsync(cancellationToken);
+        return [.. await connection.QueryAsync<Guid>(new CommandDefinition(Sql.Get("Restrictions.EndedUnannounced"), new { Now = now, Batch = batch }, cancellationToken: cancellationToken))];
+    }
+
     private Task PublishAsync(SqlTransaction transaction, Guid userId, string actor, ComplianceEvent @event, DateTimeOffset now, CancellationToken cancellationToken) =>
         @event switch
         {
             LimitChanged limit => outbox.EnqueueAsync(transaction, Topics.LimitChanged, userId.ToString(), ComplianceContracts.ToLimitChanged(userId, limit, actor, now), cancellationToken),
+            ExclusionsEnded => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Restrictions.MarkEndAnnounced"), new { UserId = userId, Now = now }, transaction, cancellationToken: cancellationToken)),
             ExclusionStarted exclusion => outbox.EnqueueAsync(transaction, Topics.SelfExclusionStarted, userId.ToString(), ComplianceContracts.ToExclusionStarted(userId, exclusion, actor, now), cancellationToken),
             _ => throw new InvalidOperationException($"No contract for {@event.GetType().Name}."),
         };
