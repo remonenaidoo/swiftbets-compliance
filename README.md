@@ -4,7 +4,7 @@ SwiftBets responsible gambling: money limits, cooling-off and self-exclusion, se
 
 | Part | What it does |
 |---|---|
-| `SwiftBets.Compliance.Api` | Customer `/me/compliance`, `/me/limits/{kind}/{period}` (PUT, DELETE), `/me/exclusions`, `/me/session-settings`; staff `/admin/users/{id}/compliance` (`compliance.read`) |
+| `SwiftBets.Compliance.Api` | Customer `/me/compliance`, `/me/limits/{kind}/{period}` (PUT, DELETE), `/me/exclusions`, `/me/session-settings`; staff `/admin/users/{id}/compliance` (`compliance.read`), `/admin/audit` and `/admin/audit/verify` (`compliance.audit.read`) |
 | `SwiftBets.Compliance.Domain` | South African rules (D99): lower limits apply at once, raises and removals after 24 hours; cooling-off 1-42 days; self-exclusion 6-60 months and never shortened |
 | `SwiftBets.Compliance.Infrastructure` | Dapper over SQL Server (`SbCompliance`, schema `compliance`). Each change locks the account row and commits with its events, its snapshot and its audit entry through the outbox |
 | `SwiftBets.Compliance.Migrator` | DbUp migrations with rollbacks (`Migrator:RollbackTo`) |
@@ -28,3 +28,13 @@ dotnet test
 ```
 
 Integration tests start SQL Server in Docker (Testcontainers).
+
+## Audit trail
+
+Every service publishes `AuditRecordedV1` through its outbox, in the transaction of the change it records. Compliance consumes them into one append-only, hash-chained trail (`compliance.AuditEntries`):
+
+- each entry's hash is SHA-256 over the previous hash and every field;
+- a head row records the last sequence and hash, so a removed tail is caught too;
+- the app login is denied UPDATE and DELETE on the entries.
+
+`/admin/audit/verify` recomputes the whole chain and names the first entry that does not hold.

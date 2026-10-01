@@ -86,6 +86,7 @@ public sealed class ComplianceApiTests(SqlServerFixture sql)
 
         (await anonymous.GetAsync(new Uri("/me/compliance", UriKind.Relative), TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.Unauthorized);
         (await customer.GetAsync(new Uri($"/admin/users/{Guid.NewGuid()}/compliance", UriKind.Relative), TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+        (await customer.GetAsync(new Uri("/admin/audit/verify", UriKind.Relative), TestContext.Current.CancellationToken)).StatusCode.ShouldBe(HttpStatusCode.Forbidden);
     }
 
     private static async Task<JsonElement> Json(HttpResponseMessage response) =>

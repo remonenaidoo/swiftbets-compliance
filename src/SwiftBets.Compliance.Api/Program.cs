@@ -14,7 +14,8 @@ builder.AddSwiftBetsObservability("swiftbets-compliance");
 builder.Services.AddSwiftBetsWeb();
 builder.Services.AddSwiftBetsJwtBearer(builder.Configuration);
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(CompliancePermissions.Read, p => p.RequireClaim("perm", CompliancePermissions.Read));
+    .AddPolicy(CompliancePermissions.Read, p => p.RequireClaim("perm", CompliancePermissions.Read))
+    .AddPolicy(CompliancePermissions.AuditRead, p => p.RequireClaim("perm", CompliancePermissions.AuditRead));
 builder.Services.AddComplianceApplication();
 builder.Services.AddComplianceInfrastructure(builder.Configuration);
 
@@ -25,6 +26,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapSwiftBetsOperationalEndpoints();
 app.MapComplianceEndpoints();
+app.MapAuditEndpoints();
 
 await app.RunAsync();
 return 0;

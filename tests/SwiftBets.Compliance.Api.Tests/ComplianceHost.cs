@@ -44,6 +44,7 @@ public sealed class ComplianceHost : WebApplicationFactory<Program>
         builder.UseSetting("Kafka:Environment", "test");
         builder.UseSetting("Kafka:ClientId", "compliance-tests");
         builder.UseSetting("Outbox:RunRelay", "false");
+        builder.UseSetting("Audit:Consume", "false");
         builder.ConfigureTestServices(services => services.UseTestJwt());
     }
 }
