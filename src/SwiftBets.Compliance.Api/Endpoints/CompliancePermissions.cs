@@ -6,4 +6,6 @@ public static class CompliancePermissions
     public const string Read = "compliance.read";
 
     public const string AuditRead = "compliance.audit.read";
+
+    public const string Write = "compliance.write";
 }

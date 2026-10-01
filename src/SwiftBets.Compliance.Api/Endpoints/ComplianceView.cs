@@ -13,7 +13,7 @@ public sealed record ComplianceView(
 {
     public static ComplianceView From(ComplianceState state, DateTimeOffset now) => new(
         [.. state.Limits.OrderBy(l => l.Kind).ThenBy(l => l.Period).Select(l => new LimitView(l.Kind, l.Period, l.Amount, l.Currency, l.PendingAmount, l.PendingEffectiveAt, l.HasPending && l.PendingAmount is null))],
-        [.. state.Restrictions.Where(r => r.IsActive(now)).Select(r => new RestrictionView(r.Kind, r.StartsAt, r.EndsAt, r.Reason))],
+        [.. state.Restrictions.Where(r => r.IsActive(now)).Select(r => new RestrictionView(r.RestrictionId, r.Kind, r.StartsAt, r.EndsAt, r.Reason))],
         state.SessionLimitMinutes,
         state.RealityCheckMinutes,
         state.KycStatus,
@@ -22,5 +22,5 @@ public sealed record ComplianceView(
     /// <summary>Amounts in minor units. PendingRemoval is true when the limit ends at PendingEffectiveAt.</summary>
     public sealed record LimitView(LimitKind Kind, LimitPeriod Period, long Amount, string Currency, long? PendingAmount, DateTimeOffset? PendingEffectiveAt, bool PendingRemoval);
 
-    public sealed record RestrictionView(RestrictionKind Kind, DateTimeOffset StartsAt, DateTimeOffset? EndsAt, string Reason);
+    public sealed record RestrictionView(Guid Id, RestrictionKind Kind, DateTimeOffset StartsAt, DateTimeOffset? EndsAt, string Reason);
 }
