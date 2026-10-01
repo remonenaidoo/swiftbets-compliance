@@ -1,0 +1,2 @@
+# swiftbets-compliance
+SwiftBets compliance
