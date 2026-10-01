@@ -20,6 +20,7 @@ public static class InfrastructureRegistration
         services.AddSqlServerPersistence(Required(configuration, "ConnectionStrings:SbCompliance"));
         services.AddSingleton<IComplianceStore, SqlComplianceStore>();
         services.AddSingleton<IAuditTrail, SqlAuditTrail>();
+        services.AddSingleton<ICaseStore, SqlCaseStore>();
 
         // Events, snapshots and audit entries leave through the outbox; the relay runs in every replica.
         services.AddKafkaMessaging(configuration);

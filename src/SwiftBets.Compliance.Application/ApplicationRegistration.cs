@@ -8,6 +8,7 @@ public static class ApplicationRegistration
     {
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<ComplianceHandler>();
+        services.AddSingleton<CaseHandler>();
         services.AddSingleton<Audit.AuditTrailHandler>();
         return services;
     }
