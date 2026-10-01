@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="SwiftBets.BuildingBlocks.Core" />
+    <PackageReference Include="SwiftBets.BuildingBlocks.Persistence" />
+    <PackageReference Include="SwiftBets.BuildingBlocks.Messaging" />
+    <PackageReference Include="SwiftBets.BuildingBlocks.Outbox" />
+    <PackageReference Include="Dapper" />
+    <ProjectReference Include="../SwiftBets.Compliance.Application/SwiftBets.Compliance.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Sql/*.sql" />
+  </ItemGroup>
+</Project>

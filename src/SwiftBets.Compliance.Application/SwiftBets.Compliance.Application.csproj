@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="SwiftBets.Contracts" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <ProjectReference Include="../SwiftBets.Compliance.Domain/SwiftBets.Compliance.Domain.csproj" />
+  </ItemGroup>
+</Project>
