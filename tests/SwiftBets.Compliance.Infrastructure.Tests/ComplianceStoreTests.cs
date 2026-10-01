@@ -95,6 +95,24 @@ public sealed class ComplianceStoreTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task An_ended_exclusion_is_announced_once_with_a_new_snapshot_and_an_audit_entry()
+    {
+        var db = await ComplianceDatabase.CreateAsync(sql);
+        var userId = Guid.NewGuid();
+        await db.Handler.StartExclusionAsync(userId, RestrictionKind.CoolingOff, 1, null, "", "self", CancellationToken.None);
+        (await db.Handler.AnnounceEndedExclusionsAsync(CancellationToken.None)).ShouldBe(0);
+
+        db.Time.Advance(TimeSpan.FromDays(1));
+
+        (await db.Handler.AnnounceEndedExclusionsAsync(CancellationToken.None)).ShouldBe(1);
+        (await db.Handler.AnnounceEndedExclusionsAsync(CancellationToken.None)).ShouldBe(0);
+        var state = await db.Handler.GetAsync(userId, CancellationToken.None);
+        (state.Revision, state.IsExcluded(db.Time.GetUtcNow()), state.Restrictions.Count).ShouldBe((2L, false, 0));
+        (await db.OutboxAsync(Topics.RestrictionsChanged)).Count.ShouldBe(2);
+        (await db.OutboxAsync(Topics.AuditRecorded)).Count.ShouldBe(2);
+    }
+
+    [Fact]
     public async Task Concurrent_changes_to_one_account_run_in_turn()
     {
         var db = await ComplianceDatabase.CreateAsync(sql);
