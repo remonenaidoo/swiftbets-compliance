@@ -62,12 +62,23 @@ public sealed class SqlComplianceStore(ISqlConnectionFactory connections, IOutbo
         @event switch
         {
             LimitChanged limit => outbox.EnqueueAsync(transaction, Topics.LimitChanged, userId.ToString(), ComplianceContracts.ToLimitChanged(userId, limit, actor, now), cancellationToken),
+            KycChanged kyc => PublishKycAsync(transaction, kyc, now, cancellationToken),
             RestrictionLifted lifted => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Restrictions.Lift"),
                 new { lifted.RestrictionId, lifted.RequestId, By = actor, Now = now }, transaction, cancellationToken: cancellationToken)),
             ExclusionsEnded => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Restrictions.MarkEndAnnounced"), new { UserId = userId, Now = now }, transaction, cancellationToken: cancellationToken)),
             ExclusionStarted exclusion => outbox.EnqueueAsync(transaction, Topics.SelfExclusionStarted, userId.ToString(), ComplianceContracts.ToExclusionStarted(userId, exclusion, actor, now), cancellationToken),
             _ => throw new InvalidOperationException($"No contract for {@event.GetType().Name}."),
         };
+
+    private async Task PublishKycAsync(SqlTransaction transaction, KycChanged kyc, DateTimeOffset now, CancellationToken cancellationToken)
+    {
+        var c = kyc.Case;
+        await transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Kyc.Upsert"), new
+        {
+            c.CaseId, c.UserId, c.Provider, DocumentType = (byte)c.DocumentType, c.DocumentHint, Status = (byte)c.Status, c.Reason, c.CreatedAt, c.DecidedAt,
+        }, transaction, cancellationToken: cancellationToken));
+        await outbox.EnqueueAsync(transaction, Topics.KycStatusChanged, c.UserId.ToString(), ComplianceContracts.ToKycChanged(kyc, now), cancellationToken);
+    }
 
     private static async Task SaveAsync(SqlConnection connection, SqlTransaction transaction, ComplianceState before, ComplianceState next, string actor, DateTimeOffset now, CancellationToken cancellationToken)
     {
