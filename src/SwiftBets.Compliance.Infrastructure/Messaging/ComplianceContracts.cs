@@ -40,6 +40,10 @@ internal static class ComplianceContracts
         Envelope(new SelfExclusionStartedV1(
             userId, Map<ContractRestrictionKind>(started.Restriction.Kind), started.Restriction.StartsAt, started.Restriction.EndsAt, started.Restriction.Reason, actor), now);
 
+    public static EventEnvelope<KycStatusChangedV1> ToKycChanged(KycChanged changed, DateTimeOffset now) =>
+        Envelope(new KycStatusChangedV1(
+            changed.Case.UserId, changed.Case.CaseId, Map<ContractKyc>(changed.Previous), Map<ContractKyc>(changed.Case.Status), changed.Case.Provider, changed.Case.Reason, now), now);
+
     private static TOut Map<TOut>(Enum value)
         where TOut : struct, Enum => Enum.Parse<TOut>(value.ToString());
 

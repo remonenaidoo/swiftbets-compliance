@@ -16,6 +16,9 @@ public sealed record ExclusionsEnded : ComplianceEvent;
 /// <summary>An approved lift: the restriction ends now and the request records who approved it.</summary>
 public sealed record RestrictionLifted(Guid RestrictionId, Guid RequestId) : ComplianceEvent;
 
+/// <summary>A verification case opened (Pending) or decided (Verified or Rejected); the case row moves with it.</summary>
+public sealed record KycChanged(KycCase Case, KycStatus Previous) : ComplianceEvent;
+
 /// <summary>A rule's accepted outcome: the next state, the audit action name and the events to publish with it.</summary>
 public sealed record ComplianceChange(ComplianceState Next, string Action, IReadOnlyList<ComplianceEvent> Events)
 {

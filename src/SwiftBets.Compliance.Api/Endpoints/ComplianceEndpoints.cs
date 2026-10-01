@@ -47,6 +47,15 @@ public static class ComplianceEndpoints
         me.MapPut("/session-settings", async (SessionBody body, HttpContext context, ComplianceHandler handler, TimeProvider time, CancellationToken cancellationToken) =>
             View(await handler.SetSessionSettingsAsync(UserId(context), body.SessionLimitMinutes, body.RealityCheckMinutes, Self, cancellationToken), context, time));
 
+        me.MapPost("/kyc", async (KycBody body, HttpContext context, KycHandler kyc, TimeProvider time, CancellationToken cancellationToken) =>
+            Enum.TryParse<KycDocumentType>(body.DocumentType, ignoreCase: true, out var type) && Enum.IsDefined(type) && !int.TryParse(body.DocumentType, out _)
+                ? View(await kyc.SubmitAsync(UserId(context), new KycDocument(type, (body.DocumentNumber ?? string.Empty).Replace(" ", string.Empty, StringComparison.Ordinal).ToUpperInvariant()), cancellationToken), context, time)
+                : Error.Validation("invalid_document", "Document type is idDocument or passport.").ToHttpResult(context));
+
+        endpoints.MapGet("/admin/users/{userId:guid}/kyc-cases", async (Guid userId, KycHandler kyc, CancellationToken cancellationToken) =>
+            Results.Json(await kyc.CasesAsync(userId, cancellationToken), ContractJson.Options))
+            .RequireAuthorization(CompliancePermissions.Read);
+
         endpoints.MapGet("/admin/users/{userId:guid}/compliance", async (Guid userId, ComplianceHandler handler, TimeProvider time, CancellationToken cancellationToken) =>
             Results.Json(ComplianceView.From(await handler.GetAsync(userId, cancellationToken), time.GetUtcNow()), ContractJson.Options))
             .RequireAuthorization(CompliancePermissions.Read);
@@ -69,6 +78,8 @@ public static class ComplianceEndpoints
     public sealed record LimitBody(long? Amount, string? Currency);
 
     public sealed record ExclusionBody(string? Kind, int? Days, int? Months, string? Reason);
+
+    public sealed record KycBody(string? DocumentType, string? DocumentNumber);
 
     public sealed record SessionBody(int? SessionLimitMinutes, int? RealityCheckMinutes);
 }

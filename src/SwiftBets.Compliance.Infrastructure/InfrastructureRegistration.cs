@@ -21,6 +21,8 @@ public static class InfrastructureRegistration
         services.AddSingleton<IComplianceStore, SqlComplianceStore>();
         services.AddSingleton<IAuditTrail, SqlAuditTrail>();
         services.AddSingleton<ICaseStore, SqlCaseStore>();
+        services.AddSingleton<IKycCaseReader, Kyc.SqlKycCaseReader>();
+        services.AddSingleton<IKycProvider, Kyc.SandboxKycProvider>();
 
         // Events, snapshots and audit entries leave through the outbox; the relay runs in every replica.
         services.AddKafkaMessaging(configuration);
