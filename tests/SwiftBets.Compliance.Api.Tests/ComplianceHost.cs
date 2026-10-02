@@ -26,6 +26,13 @@ public sealed class ComplianceHost : WebApplicationFactory<Program>
         return new ComplianceHost(connectionString);
     }
 
+    public HttpClient ServiceClient()
+    {
+        var client = CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwt.Issue("casino", "Service"));
+        return client;
+    }
+
     public HttpClient ClientFor(string subject)
     {
         var client = CreateClient();

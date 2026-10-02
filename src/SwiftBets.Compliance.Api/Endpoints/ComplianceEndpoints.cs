@@ -60,6 +60,14 @@ public static class ComplianceEndpoints
             Results.Json(ComplianceView.From(await handler.GetAsync(userId, cancellationToken), time.GetUtcNow()), ContractJson.Options))
             .RequireAuthorization(CompliancePermissions.Read);
 
+        // Services that must refuse play (casino launch) read the authoritative state here, not an eventually consistent copy.
+        endpoints.MapGet("/internal/users/{userId:guid}/restrictions", async (Guid userId, ComplianceHandler handler, TimeProvider time, CancellationToken cancellationToken) =>
+        {
+            var view = ComplianceView.From(await handler.GetAsync(userId, cancellationToken), time.GetUtcNow());
+            return Results.Json(new { excluded = view.Excluded, restrictions = view.Restrictions.Select(r => new { r.Kind, r.EndsAt }) }, ContractJson.Options);
+        })
+        .RequireAuthorization(Roles.Service);
+
         return endpoints;
     }
 
