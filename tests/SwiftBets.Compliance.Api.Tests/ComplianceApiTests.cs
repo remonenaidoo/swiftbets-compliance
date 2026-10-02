@@ -66,6 +66,33 @@ public sealed class ComplianceApiTests(SqlServerFixture sql)
     }
 
     [Fact]
+    public async Task A_service_reads_a_customer_break_the_moment_it_is_taken()
+    {
+        await using var host = await ComplianceHost.StartAsync(sql);
+        var customer = Guid.NewGuid();
+        using var client = host.ClientFor(customer.ToString());
+        using var service = host.ServiceClient();
+        (await client.PostAsJsonAsync("/me/exclusions", new { kind = "coolingOff", days = 1, reason = "break" }, TestContext.Current.CancellationToken)).EnsureSuccessStatusCode();
+
+        using var read = await service.GetAsync(new Uri($"/internal/users/{customer}/restrictions", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        var body = await Json(read);
+        body.GetProperty("restrictions")[0].GetProperty("kind").GetString().ShouldBe("coolingOff");
+    }
+
+    [Fact]
+    public async Task A_customer_cannot_read_the_internal_restrictions()
+    {
+        await using var host = await ComplianceHost.StartAsync(sql);
+        var customer = Guid.NewGuid();
+        using var client = host.ClientFor(customer.ToString());
+
+        using var read = await client.GetAsync(new Uri($"/internal/users/{customer}/restrictions", UriKind.Relative), TestContext.Current.CancellationToken);
+
+        read.StatusCode.ShouldBe(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task Session_settings_round_trip()
     {
         await using var host = await ComplianceHost.StartAsync(sql);
