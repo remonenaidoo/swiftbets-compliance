@@ -6,6 +6,8 @@ using SwiftBets.BuildingBlocks.Persistence;
 using SwiftBets.Compliance.Application.Audit;
 using SwiftBets.Compliance.Application.Ports;
 using SwiftBets.Compliance.Infrastructure.Audit;
+using SwiftBets.Compliance.Infrastructure.Documents;
+using SwiftBets.BuildingBlocks.Core;
 using SwiftBets.Contracts.Audit;
 using SwiftBets.Contracts.Messaging;
 using SwiftBets.Compliance.Infrastructure.Persistence;
@@ -23,6 +25,11 @@ public static class InfrastructureRegistration
         services.AddSingleton<ICaseStore, SqlCaseStore>();
         services.AddSingleton<IKycCaseReader, Kyc.SqlKycCaseReader>();
         services.AddSingleton<IKycProvider, Kyc.SandboxKycProvider>();
+
+        // Uploaded files go to object storage behind IDocumentStore; this environment has no S3-compatible store, so a volume.
+        services.AddValidatedOptions<DocumentOptions>(configuration, DocumentOptions.SectionName);
+        services.AddSingleton<IDocumentStore, FileSystemDocumentStore>();
+        services.AddSingleton<IDocumentLinks, HmacDocumentLinks>();
 
         // Events, snapshots and audit entries leave through the outbox; the relay runs in every replica.
         services.AddKafkaMessaging(configuration);

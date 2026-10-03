@@ -10,6 +10,7 @@ public static class ApplicationRegistration
         services.AddSingleton<ComplianceHandler>();
         services.AddSingleton<CaseHandler>();
         services.AddSingleton<KycHandler>();
+        services.AddSingleton<KycReviewHandler>();
         services.AddSingleton<Audit.AuditTrailHandler>();
         return services;
     }
