@@ -54,6 +54,13 @@ public static class KycReviewEndpoints
         .DisableAntiforgery()
         .WithMetadata(new Microsoft.AspNetCore.Mvc.RequestSizeLimitAttribute(MaxRequestBytes));
 
+        // The customer's latest case, so the site can say what is happening and why a rejection happened.
+        endpoints.MapGet("/me/kyc", async (HttpContext context, KycHandler kyc, CancellationToken cancellationToken) =>
+            (await kyc.CasesAsync(UserId(context), cancellationToken)) is [var latest, ..]
+                ? Results.Json(new { latest.Status, latest.Reason, latest.DocumentType, latest.CreatedAt, latest.DecidedAt, reviewed = latest.Provider == KycUploadPolicy.ReviewProvider }, ContractJson.Options)
+                : Results.NoContent())
+            .RequireAuthorization();
+
         var admin = endpoints.MapGroup("/admin/kyc");
 
         admin.MapGet("/queue", async (KycReviewHandler review, CancellationToken cancellationToken) =>
