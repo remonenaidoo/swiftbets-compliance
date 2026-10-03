@@ -63,6 +63,10 @@ public sealed class SqlComplianceStore(ISqlConnectionFactory connections, IOutbo
         {
             LimitChanged limit => outbox.EnqueueAsync(transaction, Topics.LimitChanged, userId.ToString(), ComplianceContracts.ToLimitChanged(userId, limit, actor, now), cancellationToken),
             KycChanged kyc => PublishKycAsync(transaction, kyc, now, cancellationToken),
+            KycFilesAdded added => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Kyc.InsertFile"), added.Files.Select(f => new
+            {
+                f.FileId, f.CaseId, f.UserId, Kind = (byte)f.Kind, f.ContentType, f.SizeBytes, f.StorageKey, f.UploadedAt,
+            }), transaction, cancellationToken: cancellationToken)),
             RestrictionLifted lifted => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Restrictions.Lift"),
                 new { lifted.RestrictionId, lifted.RequestId, By = actor, Now = now }, transaction, cancellationToken: cancellationToken)),
             ExclusionsEnded => transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Restrictions.MarkEndAnnounced"), new { UserId = userId, Now = now }, transaction, cancellationToken: cancellationToken)),
@@ -75,7 +79,7 @@ public sealed class SqlComplianceStore(ISqlConnectionFactory connections, IOutbo
         var c = kyc.Case;
         await transaction.Connection!.ExecuteAsync(new CommandDefinition(Sql.Get("Kyc.Upsert"), new
         {
-            c.CaseId, c.UserId, c.Provider, DocumentType = (byte)c.DocumentType, c.DocumentHint, Status = (byte)c.Status, c.Reason, c.CreatedAt, c.DecidedAt,
+            c.CaseId, c.UserId, c.Provider, DocumentType = (byte)c.DocumentType, c.DocumentHint, Status = (byte)c.Status, c.Reason, c.CreatedAt, c.DecidedAt, c.LegalName,
         }, transaction, cancellationToken: cancellationToken));
         await outbox.EnqueueAsync(transaction, Topics.KycStatusChanged, c.UserId.ToString(), ComplianceContracts.ToKycChanged(kyc, now), cancellationToken);
     }

@@ -29,6 +29,7 @@ app.MapSwiftBetsOperationalEndpoints();
 app.MapComplianceEndpoints();
 app.MapAuditEndpoints();
 app.MapCaseEndpoints();
+app.MapKycReviewEndpoints();
 
 await app.RunAsync();
 return 0;

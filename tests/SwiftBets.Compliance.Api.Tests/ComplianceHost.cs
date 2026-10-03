@@ -53,6 +53,8 @@ public sealed class ComplianceHost : WebApplicationFactory<Program>
         builder.UseSetting("Outbox:RunRelay", "false");
         builder.UseSetting("Audit:Consume", "false");
         builder.UseSetting("Exclusions:AnnounceEndings", "false");
+        builder.UseSetting("Documents:Root", Path.Combine(Path.GetTempPath(), "swiftbets-kyc-tests"));
+        builder.UseSetting("Documents:SigningKey", "test-signing-key-test-signing-key-0123");
         builder.ConfigureTestServices(services => services.UseTestJwt());
     }
 }

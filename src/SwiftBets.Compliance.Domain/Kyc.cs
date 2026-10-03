@@ -12,7 +12,8 @@ public sealed record KycDocument(KycDocumentType Type, string Number)
     public string Hint => Number.Length <= 4 ? Number : Number[^4..];
 }
 
-public sealed record KycCase(Guid CaseId, Guid UserId, string Provider, KycDocumentType DocumentType, string DocumentHint, KycStatus Status, string? Reason, DateTimeOffset CreatedAt, DateTimeOffset? DecidedAt);
+/// <summary>A verification case. LegalName is set when the customer uploads documents for an operator to review.</summary>
+public sealed record KycCase(Guid CaseId, Guid UserId, string Provider, KycDocumentType DocumentType, string DocumentHint, KycStatus Status, string? Reason, DateTimeOffset CreatedAt, DateTimeOffset? DecidedAt, string? LegalName = null);
 
 public sealed record KycDecision(bool Verified, string? Reason);
 
@@ -53,4 +54,39 @@ public static class KycPolicy
 
         return sum % 10 == 0;
     }
+}
+
+/// <summary>Which file of an uploaded verification it is.</summary>
+public enum KycFileKind : byte
+{
+    Identity = 1,
+    ProofOfAddress = 2,
+}
+
+/// <summary>An uploaded file's metadata; the bytes live in object storage under StorageKey, never in the database.</summary>
+public sealed record KycFile(Guid FileId, Guid CaseId, Guid UserId, KycFileKind Kind, string ContentType, long SizeBytes, string StorageKey, DateTimeOffset UploadedAt);
+
+/// <summary>Rules for uploaded verification files and the name given with them.</summary>
+public static class KycUploadPolicy
+{
+    public const string ReviewProvider = "manual";
+
+    public const long MaxBytes = 10 * 1024 * 1024;
+
+    /// <summary>The content type from the file's first bytes; the type the client claims is never trusted.</summary>
+    public static string? Sniff(ReadOnlySpan<byte> head) =>
+        head.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]) ? "image/jpeg"
+        : head.StartsWith((ReadOnlySpan<byte>)[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) ? "image/png"
+        : head.StartsWith("%PDF-"u8) ? "application/pdf"
+        : null;
+
+    public static ComplianceError? ValidateFile(long length, string? sniffed) =>
+        length is <= 0 or > MaxBytes ? new ComplianceError("file_too_large", "Each file must be under 10 MB.")
+        : sniffed is null ? new ComplianceError("file_type_not_allowed", "Upload a JPG, PNG or PDF file.")
+        : null;
+
+    public static ComplianceError? ValidateName(string? legalName) =>
+        legalName is { Length: >= 3 and <= 200 } name && name.Trim().Contains(' ', StringComparison.Ordinal)
+            ? null
+            : new ComplianceError("legal_name_required", "Give your full name as it appears on your document.");
 }

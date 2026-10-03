@@ -19,6 +19,9 @@ public sealed record RestrictionLifted(Guid RestrictionId, Guid RequestId) : Com
 /// <summary>A verification case opened (Pending) or decided (Verified or Rejected); the case row moves with it.</summary>
 public sealed record KycChanged(KycCase Case, KycStatus Previous) : ComplianceEvent;
 
+/// <summary>Files uploaded with a case; their metadata rows commit with the case.</summary>
+public sealed record KycFilesAdded(IReadOnlyList<KycFile> Files) : ComplianceEvent;
+
 /// <summary>A rule's accepted outcome: the next state, the audit action name and the events to publish with it.</summary>
 public sealed record ComplianceChange(ComplianceState Next, string Action, IReadOnlyList<ComplianceEvent> Events)
 {
